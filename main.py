@@ -1,69 +1,108 @@
 import streamlit as st
 import google.generativeai as genai
-from PIL import Image, ImageEnhance, ImageOps
+from PIL import Image, ImageEnhance
 import requests
 import io
 import numpy as np
 import cv2
 
-# Page Setup
-st.set_page_config(page_title="Aziz Pro Ultra-Res", layout="centered")
-st.title("🛡️ Aziz Pro: Deep Image Restoration")
+# Page Configuration
+st.set_page_config(page_title="Aziz Ultra-Max 4K", layout="wide")
 
-# Get Secrets
+# Sidebar for Language & Settings
+st.sidebar.title("Settings | الإعدادات")
+lang = st.sidebar.selectbox("Select Language / اختر اللغة", ["English", "العربية"])
+
+# UI Strings Mapping
+if lang == "العربية":
+    ui_title = "🛡️ رادار Aziz المطور: دقة 4K وإعادة بناء"
+    ui_upload = "ارفع الصورة هنا للتحسين السينمائي..."
+    ui_btn = "🔥 تشغيل المعالجة العميقة ومضاعفة الحجم"
+    ui_sharp = "قوة التوضيح"
+    ui_contrast = "قوة التباين"
+    ui_upscale = "معامل التكبير (الريزولوشن)"
+    ui_success = "تم إرسال النسخة المحسنة والتقرير إلى تيليجرام!"
+    ui_before = "الصورة الأصلية"
+    ui_after = "النتيجة بعد التحسين (4K)"
+    ui_report = "تحليل الذكاء الاصطناعي العميق:"
+else:
+    ui_title = "🛡️ Aziz Ultra-Max: 4K Image Reconstruction"
+    ui_upload = "Upload Image for Cinematic Quality..."
+    ui_btn = "🔥 Execute Deep Enhancement & Upscaling"
+    ui_sharp = "Sharpening Strength"
+    ui_contrast = "Contrast Boost"
+    ui_upscale = "Upscale Factor (Resolution)"
+    ui_success = "Cinematic version and AI report sent to Telegram!"
+    ui_before = "Original Image"
+    ui_after = "Enhanced Result (4K)"
+    ui_report = "AI Deep Analysis Report:"
+
+st.title(ui_title)
+
+# Fetch Secrets
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 TELEGRAM_TOKEN = st.secrets["TELEGRAM_TOKEN"]
 CHAT_ID = st.secrets["CHAT_ID"]
 
+# Configure AI
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
-uploaded_file = st.file_uploader("Upload image for Ultra-Enhancement...", type=['png', 'jpg', 'jpeg'])
+# Sliders in Sidebar
+st.sidebar.markdown("---")
+sharp_val = st.sidebar.slider(ui_sharp, 1.0, 5.0, 2.5)
+cont_val = st.sidebar.slider(ui_contrast, 1.0, 3.0, 1.5)
+upscale_val = st.sidebar.radio(ui_upscale, [2, 4], index=0)
+
+uploaded_file = st.file_uploader(ui_upload, type=['png', 'jpg', 'jpeg'])
 
 if uploaded_file is not None:
-    # 1. Load Image
     image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption='Original Image', use_column_width=True)
     
-    if st.button('🚀 Execute Deep Enhancement'):
-        with st.spinner('Applying Deep Sharpening & AI Analysis...'):
-            
-            # 2. Manual Enhancement (The "Pro" Step)
-            # Enhance Contrast
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader(ui_before)
+        st.image(image, use_container_width=True)
+    
+    if st.button(ui_btn):
+        with st.spinner('Processing...'):
+            # 1. Contrast Enhancement
             enhancer = ImageEnhance.Contrast(image)
-            image = enhancer.enhance(1.2) # Increase contrast by 20%
+            temp_img = enhancer.enhance(cont_val)
             
-            # Deep Sharpening using OpenCV
-            img_np = np.array(image)
-            kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]]) # Sharpening Filter
+            # 2. Professional Upscaling
+            img_np = np.array(temp_img)
+            w, h = int(img_np.shape[1] * upscale_val), int(img_np.shape[0] * upscale_val)
+            img_np = cv2.resize(img_np, (w, h), interpolation=cv2.INTER_CUBIC)
+            
+            # 3. Deep Sharpening
+            gaussian = cv2.GaussianBlur(img_np, (0, 0), 3)
+            img_np = cv2.addWeighted(img_np, 1.5, gaussian, -0.5, 0)
+            kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]]) * (sharp_val / 2.5)
             img_np = cv2.filter2D(img_np, -1, kernel)
-            enhanced_image = Image.fromarray(img_np)
             
-            # 3. AI Analysis Report
-            prompt = (
-                "Act as a forensic photo analyst. Identify every single detail, "
-                "text, and object in this image. Describe them in clear Arabic "
-                "so I can understand what was hidden in the blur."
-            )
-            response = model.generate_content([prompt, enhanced_image])
+            final_image = Image.fromarray(img_np)
             
-            # 4. Save and Send
-            img_byte_arr = io.BytesIO()
-            enhanced_image.save(img_byte_arr, format='PNG')
-            img_byte_arr = img_byte_arr.getvalue()
+            with col2:
+                st.subheader(ui_after)
+                st.image(final_image, use_container_width=True)
+
+            # 4. AI Forensic Analysis
+            prompt = "Analyze this image in detail. List hidden objects, text, and faces. Response should be in the language: " + lang
+            response = model.generate_content([prompt, final_image])
             
-            files = {'photo': img_byte_arr}
-            caption_text = f"🔥 Ultra-Enhanced Result for Aziz!\n\n🔍 Report:\n{response.text}"
+            # 5. Send to Telegram
+            buf = io.BytesIO()
+            final_image.save(buf, format='PNG')
             
             try:
                 requests.post(
                     f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto", 
-                    data={'chat_id': CHAT_ID, 'caption': caption_text[:1000]}, 
-                    files=files
+                    data={'chat_id': CHAT_ID, 'caption': f"💎 Aziz 4K Result!\n\n{response.text[:1000]}"}, 
+                    files={'photo': buf.getvalue()}
                 )
-                st.success("The 'Cinematic' version is now on your Telegram!")
-                st.image(enhanced_image, caption='Enhanced Version (Preview)', use_column_width=True)
-                st.write("### AI Deep Dive Report:")
+                st.success(ui_success)
+                st.write(f"### {ui_report}")
                 st.write(response.text)
             except Exception as e:
-                st.error(f"Telegram Error: {e}")
+                st.error(f"Error: {e}")
