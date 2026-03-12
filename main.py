@@ -57,7 +57,7 @@ st.markdown(f'<p style="text-align: center; color: #475569;">{t_welcome}</p>', u
 try:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
     # جربنا flash وما ضبط، الحين بنستخدم gemini-pro مباشرة بدون "models/"
-    model = genai.GenerativeModel('gemini-1.5-flash') 
+    model = genai.GenerativeModel(model_name="models/gemini-1.5-flash") 
 except Exception as e:
     st.error("Check Secrets Configuration")
 
