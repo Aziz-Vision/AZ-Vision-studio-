@@ -3,5 +3,4 @@ opencv-python-headless
 numpy
 pillow
 requests
-google-generativeai
-streamlit-analytics
+google-generativeai>=0.8.3
