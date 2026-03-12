@@ -42,7 +42,7 @@ if uploaded_file is not None:
     if st.button(ui_btn):
         with st.spinner("Processing with Gemini AI..."):
             # Deep Analysis & Enhancement logic
-            model = genai.GenerativeModel('models/gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-1.5-flash')
             response = model.generate_content(["Describe this image in detail and suggest enhancement parameters for 4K upscale.", image])
             
             # Send to Telegram
