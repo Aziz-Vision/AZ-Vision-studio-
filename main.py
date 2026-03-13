@@ -10,10 +10,10 @@ st.markdown("<style>.stApp {background-color: white !important;}</style>", unsaf
 
 st.title("🚀 AZIZ ULTRA-MAX AI")
 
-# 2. إعداد الموديل (تعديل السطر اللي يسبب 404)
+# 2. إعداد الموديل (تم تصحيح النداء هنا)
 try:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-    # السر هنا: شلنا أي إضافات وخليناه ينادي الموديل باسمه المباشر
+    # ننادي الموديل باسمه المباشر بدون إضافات "models/"
     model = genai.GenerativeModel('gemini-1.5-flash')
 except Exception as e:
     st.error(f"Settings Error: {e}")
@@ -25,7 +25,7 @@ if up:
     st.image(image, use_container_width=True)
     with st.spinner("⏳ جاري التحليل والإرسال..."):
         try:
-            # طلب الوصف
+            # طلب التحليل
             response = model.generate_content(["Describe this image", image])
             
             # إرسال لتيليجرام
@@ -41,8 +41,7 @@ if up:
             st.success("✅ اشتغل يا بطل!")
             st.write(response.text)
         except Exception as e:
-            # إذا طلع 404 مرة ثانية، راح نطبع للمستخدم الحل
-            st.error(f"تنبيه: السيرفر يحتاج تحديث يدوي. الخطأ: {e}")
+            st.error(f"تنبيه: {e}")
 
 # 3. التوقيع (BY: Aziz18)
 st.markdown('<div style="background:#0f172a; color:white; padding:20px; border-radius:10px; text-align:center; font-size:25px; font-weight:bold;">BY: Aziz18</div>', unsafe_allow_html=True)
