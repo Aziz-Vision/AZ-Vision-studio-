@@ -4,43 +4,51 @@ from PIL import Image
 import io
 import requests
 
-# Aziz18 Edition
+# Aziz18 Pro Config
 st.set_page_config(page_title="Aziz18 Vision", layout="centered")
 
-# الحل النهائي لخطأ الـ 404 (إجبار الموديل المستقر)
-try:
+# Configure API
+if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-    # استخدمنا gemini-1.5-flash بدون أي v1beta في الخلفية
-    model = genai.GenerativeModel('gemini-1.5-flash')
-except Exception as e:
-    st.error(f"Error: {e}")
+else:
+    st.error("Missing API Key in Secrets!")
+
+# Force Use Stable Model
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+st.title("🚀 AZIZ ULTRA-MAX AI")
 
 up = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
 
 if up:
     image = Image.open(up)
-    st.image(image)
+    st.image(image, use_container_width=True)
     
     if st.button("Analyze & Send"):
         with st.spinner("Processing..."):
             try:
-                # النداء المباشر
-                response = model.generate_content(["Describe this image", image])
+                # Direct Analysis
+                response = model.generate_content(["Describe this image briefly", image])
                 
-                # Telegram
+                # Telegram Send
                 buf = io.BytesIO()
                 image.save(buf, format='JPEG')
+                
                 requests.post(
                     f"https://api.telegram.org/bot{st.secrets['TELEGRAM_TOKEN']}/sendPhoto",
                     files={'photo': buf.getvalue()},
-                    data={'chat_id': st.secrets['CHAT_ID'], 'caption': f"Aziz18:\n{response.text[:800]}"}
+                    data={
+                        'chat_id': st.secrets['CHAT_ID'], 
+                        'caption': f"🎯 Aziz18 Report:\n\n{response.text[:800]}"
+                    }
                 )
                 
                 st.balloons()
-                st.success("Done!")
+                st.success("✅ Success! Check Telegram.")
                 st.write(response.text)
+                
             except Exception as e:
-                st.error(f"Details: {str(e)}")
+                st.error(f"Error Details: {str(e)}")
 
 st.markdown("---")
-st.write("BY: Aziz18")
+st.markdown("<h3 style='text-align: center;'>BY: Aziz18</h3>", unsafe_allow_html=True)
