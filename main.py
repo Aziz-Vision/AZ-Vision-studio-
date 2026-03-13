@@ -4,17 +4,17 @@ from PIL import Image
 import io
 import requests
 
-# 1. التنسيق الفخم لـ Aziz18
+# 1. تنسيق Aziz18
 st.set_page_config(page_title="Aziz18 Vision", layout="centered")
 st.markdown("<style>.stApp {background-color: white !important;}</style>", unsafe_allow_html=True)
 
 st.title("🚀 AZIZ ULTRA-MAX AI")
 
-# 2. الحل الجذري لخطأ 404 (تغيير طريقة النداء)
+# 2. الحل اللي بيكسر الـ 404
 try:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-    # التحديث الجديد يتطلب تحديد الإصدار بدقة لتجنب 404
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    # استخدمنا gemini-pro-vision لأنها النسخة الأكثر استقراراً للصور حالياً
+    model = genai.GenerativeModel('gemini-pro-vision')
 except Exception as e:
     st.error(f"Setup Error: {e}")
 
@@ -26,30 +26,28 @@ if up:
     
     with st.spinner("⏳ جاري التحليل والإرسال للتيليجرام..."):
         try:
-            # طلب وصف الصورة
-            response = model.generate_content(["Describe this image in detail", image])
+            # هنا التعديل الجوهري لطريقة إرسال الصورة
+            response = model.generate_content(contents=["حلل هذه الصورة بالتفصيل", image])
             
-            # --- شغل التيليجرام ---
+            # شغل التيليجرام
             img_byte_arr = io.BytesIO()
             image.save(img_byte_arr, format='JPEG')
             
-            # إرسال الصورة مع التحليل
             requests.post(
                 f"https://api.telegram.org/bot{st.secrets['TELEGRAM_TOKEN']}/sendPhoto",
                 files={'photo': img_byte_arr.getvalue()},
                 data={
                     'chat_id': st.secrets['CHAT_ID'], 
-                    'caption': f"🎯 تقرير جديد من Aziz18:\n\n{response.text[:900]}"
+                    'caption': f"🎯 تقرير جديد Aziz18:\n{response.text[:900]}"
                 }
             )
             
             st.balloons()
-            st.success("✅ أبشرك اشتغل ووصل التيليجرام!")
+            st.success("✅ أخيراً اشتغل!")
             st.write(response.text)
             
         except Exception as e:
-            # هذا السطر عشان لو طلع خطأ نعرف سببه بالضبط
             st.error(f"عذراً عزيز، حدث خطأ: {str(e)}")
 
-# 3. التوقيع النهائي
+# 3. التوقيع
 st.markdown('<div style="background:#0f172a; color:white; padding:20px; border-radius:10px; text-align:center; font-size:25px; font-weight:bold;">BY: Aziz18</div>', unsafe_allow_html=True)
