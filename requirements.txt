@@ -1,11 +1,4 @@
-torch==2.0.1
-torchvision==0.15.2
 streamlit
-opencv-python-headless
-numpy==1.24.3
-Pillow
-git+https://github.com/sczhou/CodeFormer.git
-facelib
-py-cpuinfo
-gdown
+gradio_client
 pyTelegramBotAPI
+Pillow
