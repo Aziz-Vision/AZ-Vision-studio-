@@ -1,7 +1,10 @@
 streamlit==1.24.0
 opencv-python-headless
-Pillow
-pyTelegramBotAPI
 numpy==1.24.3
+Pillow
+torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu
+torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cpu
+pyTelegramBotAPI
 facexlib
 basicsr==1.4.2
+git+https://github.com/sczhou/CodeFormer.git
