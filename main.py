@@ -25,7 +25,7 @@ if uploaded_file:
         with st.spinner("جاري الترميم بجودة Ultra... انتظر ثواني"):
             try:
                 # 1. تصغير حجم الصورة إذا كانت كبيرة جداً لتجنب رفض السيرفر
-                max_size = 1500  # الحد الأقصى للعرض أو الطول
+                max_size = 1500
                 if max(image.size) > max_size:
                     image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
                 
@@ -33,7 +33,7 @@ if uploaded_file:
                 temp_path = "temp_input.png"
                 image.save(temp_path)
                 
-                # 3. استدعاء محرك CodeFormer المجاني
+                # 3. استدعاء محرك CodeFormer
                 client = Client("sczhou/CodeFormer")
                 result = client.predict(
                     image=handle_file(temp_path),
@@ -42,19 +42,23 @@ if uploaded_file:
                     upscale=2
                 )
                 
-                # النتيجة المسلمة هي مسار الصورة المحسنة
-                restored_image_path = result
+                # 4. معالجة النتيجة (التأكد من أخذ الصورة المرممة فقط)
+                # إذا رجع السيرفر قائمة صور، نأخذ الأولى
+                if isinstance(result, list):
+                    restored_image_path = result[0]
+                else:
+                    restored_image_path = result
                 
-                # 4. عرض النتيجة في الموقع
+                # 5. عرض النتيجة في الموقع
                 st.image(restored_image_path, caption="النتيجة النهائية (جودة Ultra)", use_container_width=True)
                 
-                # 5. إرسال الصورة الفعلية للتليجرام
+                # 6. إرسال الصورة الفعلية للتليجرام
                 with open(restored_image_path, "rb") as f:
                     bot.send_photo(CHAT_ID, f, caption="✅ تم ترميم صورتك بجودة Ultra بنجاح!")
                 
                 st.success("تم إرسال الصورة إلى جوالك بنجاح! 📱")
                 
-                # 6. تنظيف الملفات المؤقتة
+                # 7. تنظيف الملفات المؤقتة
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
                 
