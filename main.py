@@ -15,9 +15,9 @@ import tempfile
 st.set_page_config(page_title="Aziz Ultra Restoration", page_icon="🌟")
 
 st.markdown("<h1 style='text-align: center;'>🌟 Aziz Ultra Restoration</h1>", unsafe_allow_config=True)
-st.write("ارفع صورتك الآن لترميمها وتحسين جودة الوجه والعيون واليدين.")
+st.write("ارفع صورتك الآن لترميمها وتحسين جودة الوجه والعيون بتقنية الذكاء الاصطناعي.")
 
-# جلب بيانات البوت من Secrets
+# جلب بيانات البوت من Secrets (تأكد من وضعها في إعدادات Streamlit)
 TOKEN = st.secrets["TELEGRAM_TOKEN"]
 CHAT_ID = st.secrets["CHAT_ID"]
 bot = telebot.TeleBot(TOKEN)
@@ -30,6 +30,7 @@ def load_model():
                        nb_blocks=2, oversampling_2x=True, 
                        disable_perceptual_loss=True).to(device)
     
+    # تحميل الأوزان (تأكد أن المجلد والملف مرفوعين في GitHub)
     checkpoint_path = 'weights/codeformer.pth'
     if os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path)['params_ema']
@@ -60,7 +61,8 @@ def process_image(image, model, device):
         except:
             restored_face = cropped_face
             
-        face_helper.add_restored_face(restored_face.astype('uint8'))
+        restored_face = restored_face.astype('uint8')
+        face_helper.add_restored_face(restored_face)
         
     face_helper.get_inverse_affine(None)
     restored_img = face_helper.paste_faces_to_input_image()
