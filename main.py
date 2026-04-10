@@ -24,7 +24,7 @@ if uploaded_file:
     if st.button("🚀 بدء عملية التحسين العميق"):
         with st.spinner("جاري الترميم بجودة Ultra... انتظر ثواني"):
             try:
-                # 1. تصغير حجم الصورة إذا كانت كبيرة جداً لتجنب رفض السيرفر
+                # 1. تصغير حجم الصورة إذا كانت كبيرة جداً
                 max_size = 1500
                 if max(image.size) > max_size:
                     image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
@@ -42,9 +42,11 @@ if uploaded_file:
                     upscale=2
                 )
                 
-                # 4. معالجة النتيجة (التأكد من أخذ الصورة المرممة فقط)
-                # إذا رجع السيرفر قائمة صور، نأخذ الأولى
+                # 4. معالجة النتيجة (الحل الجذري لمشكلة 2 images)
+                # السيرفر يرجع قائمة فيها مسارات الصور، نأخذ المسار الأول
                 if isinstance(result, list):
+                    restored_image_path = result[0]
+                elif isinstance(result, tuple):
                     restored_image_path = result[0]
                 else:
                     restored_image_path = result
