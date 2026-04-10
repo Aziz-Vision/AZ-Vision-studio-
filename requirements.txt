@@ -1,11 +1,11 @@
+torch==2.0.1
+torchvision==0.15.2
 streamlit
 opencv-python-headless
 numpy==1.24.3
 Pillow
-torch==2.0.1
-torchvision==0.15.2
-basicsr
-facelib
 py-cpuinfo
 gdown
 pyTelegramBotAPI
+git+https://github.com/sczhou/CodeFormer.git
+git+https://github.com/xinntao/facexlib.git
