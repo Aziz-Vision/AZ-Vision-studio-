@@ -9,11 +9,12 @@ st.set_page_config(page_title="Aziz Ultra Vision", layout="centered")
 st.title("🌟 Aziz Ultra Vision")
 st.subheader("ترميم الصور بالذكاء الاصطناعي - جودة فائقة")
 
-# جلب توكن التليجرام من الـ Secrets
+# جلب بيانات التليجرام من الـ Secrets
 TOKEN = st.secrets["TELEGRAM_TOKEN"]
 CHAT_ID = st.secrets["CHAT_ID"]
 bot = telebot.TeleBot(TOKEN)
 
+# واجهة رفع الملفات
 uploaded_file = st.file_uploader("اختر صورة لترميمها...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
@@ -23,34 +24,38 @@ if uploaded_file:
     if st.button("🚀 بدء عملية التحسين العميق"):
         with st.spinner("جاري الترميم بجودة Ultra... انتظر ثواني"):
             try:
-                # حفظ الصورة مؤقتاً
-                temp_path = "temp_image.png"
+                # 1. حفظ الصورة المرفوعة مؤقتاً
+                temp_path = "temp_input.png"
                 image.save(temp_path)
                 
-                # استخدام محرك CodeFormer المجاني عبر Hugging Face
+                # 2. استدعاء محرك CodeFormer المجاني
                 client = Client("sczhou/CodeFormer")
                 result = client.predict(
                     image=handle_file(temp_path),
                     background_enhance=True,
                     face_upsample=True,
-                    upscale=2,
-                    api_name="/predict"
+                    upscale=2
                 )
                 
-                # النتيجة تكون مسار لصورة
+                # النتيجة المسلمة هي مسار الصورة المحسنة
                 restored_image_path = result
                 
-                # عرض النتيجة في الموقع
-                st.image(restored_image_path, caption="النتيجة النهائية", use_container_width=True)
+                # 3. عرض النتيجة في الموقع
+                st.image(restored_image_path, caption="النتيجة النهائية (جودة Ultra)", use_container_width=True)
                 
-                # إرسال للتليجرام
+                # 4. إرسال الصورة الفعلية للتليجرام
                 with open(restored_image_path, "rb") as f:
-                    bot.send_photo(CHAT_ID, f, caption="✅ تم ترميم صورتك بجودة Ultra!")
+                    bot.send_photo(CHAT_ID, f, caption="✅ تم ترميم صورتك بجودة Ultra بنجاح!")
                 
-                st.success("تم التوصيل لجوالك بنجاح! 📱")
+                st.success("تم إرسال الصورة إلى جوالك بنجاح! 📱")
                 
-                # تنظيف الملفات المؤقتة
-                os.remove(temp_path)
+                # 5. تنظيف الملفات المؤقتة
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
                 
             except Exception as e:
-                st.error(f"حدث خطأ: {e}")
+                st.error(f"حدث خطأ أثناء المعالجة: {e}")
+
+# تذييل الصفحة
+st.markdown("---")
+st.caption("Developed by Aziz | Powered by CodeFormer AI")
