@@ -1,11 +1,7 @@
 streamlit
+google-generativeai>=0.8.3
+groq
 opencv-python-headless
 numpy
-Pillow
-torch
-torchvision
-basicsr
-facelib
-py-cpuinfo
-gdown
-pyTelegramBotAPI
+pillow
+requests
