@@ -1,5 +1,5 @@
-opencv-python-headless
 streamlit
+opencv-python-headless
 numpy
 Pillow
 torch
@@ -8,5 +8,4 @@ basicsr
 facelib
 py-cpuinfo
 gdown
-replicate
 pyTelegramBotAPI
