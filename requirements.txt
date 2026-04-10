@@ -1,4 +1,12 @@
 streamlit
-gradio_client
-pyTelegramBotAPI
+opencv-python-headless
+numpy
 Pillow
+torch
+torchvision
+basicsr
+facelib
+py-cpuinfo
+gdown
+replicate
+pyTelegramBotAPI
