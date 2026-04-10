@@ -8,9 +8,10 @@ from PIL import Image
 st.set_page_config(page_title="Aziz Ultra Vision", layout="centered")
 st.title("🌟 Aziz Ultra Vision")
 
-# جلب بيانات التليجرام من الـ Secrets
-TOKEN = st.secrets.get("TELEGRAM_TOKEN", "")
-CHAT_ID = st.secrets.get("CHAT_ID", "")
+# --- ضع بياناتك هنا مباشرة لضمان العمل ---
+TOKEN = "8767448980:AAHMOm14WsC2QBPJKoWgsvZYKSR_o-V973Q"
+CHAT_ID = "6889820165"
+bot = telebot.TeleBot(TOKEN)
 
 uploaded_file = st.file_uploader("ارفع الصورة هنا للترميم...", type=["jpg", "jpeg", "png"])
 
@@ -18,10 +19,10 @@ if uploaded_file:
     image = Image.open(uploaded_file)
     st.image(image, caption="الصورة الأصلية", use_container_width=True)
     
-    if st.button("🚀 بدء الترميم"):
+    if st.button("🚀 ابدأ التحسين الآن"):
         with st.spinner("جاري العمل..."):
             try:
-                # 1. تجهيز الصورة
+                # 1. تصغير الصورة عشان السيرفر ما يرفضها
                 max_size = 1500
                 if max(image.size) > max_size:
                     image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
@@ -29,7 +30,7 @@ if uploaded_file:
                 temp_path = "temp_input.png"
                 image.save(temp_path)
                 
-                # 2. استدعاء المحرك
+                # 2. استدعاء محرك الذكاء الاصطناعي
                 client = Client("sczhou/CodeFormer")
                 result = client.predict(
                     image=handle_file(temp_path),
@@ -38,34 +39,31 @@ if uploaded_file:
                     upscale=2
                 )
                 
-                # تنقية النتيجة
+                # تنقية المسار (عشان يطلع لنا الصورة المرممة بس)
                 restored_path = result[0] if isinstance(result, (list, tuple)) else result
                 
-                # 3. عرض النتيجة
+                # 3. عرض النتيجة النهائية
                 st.image(restored_path, caption="✅ تم الترميم بجودة فائقة", use_container_width=True)
                 
-                # --- إضافة أيقونة الحفظ (زر التحميل) ---
+                # --- إضافة زر الحفظ (هنا الحل اللي تبيه) ---
                 with open(restored_path, "rb") as file:
                     st.download_button(
                         label="📥 حفظ الصورة في جوالك",
                         data=file,
-                        file_name="restored_image.png",
+                        file_name="Aziz_Result.png",
                         mime="image/png"
                     )
 
-                # 4. محاولة الإرسال للتليجرام
-                if TOKEN and CHAT_ID:
-                    try:
-                        bot = telebot.TeleBot(TOKEN)
-                        with open(restored_path, "rb") as f:
-                            bot.send_photo(CHAT_ID, f, caption="🔥 صورة جديدة جاهزة!")
-                        st.toast("تم الإرسال للتليجرام بنجاح! ✅")
-                    except Exception as tele_err:
-                        st.warning(f"فشل الإرسال للتليجرام: {tele_err}")
+                # 4. الإرسال للتليجرام
+                try:
+                    with open(restored_path, "rb") as f:
+                        bot.send_photo(CHAT_ID, f, caption="🔥 صورة جديدة تم ترميمها بنجاح!")
+                except:
+                    pass # لو فشل التليجرام ما نبي الموقع يطلع رسالة حمراء
                 
-                # تنظيف
+                # تنظيف الملفات المؤقتة
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
                 
             except Exception as e:
-                st.error(f"حدث خطأ في المعالجة: {e}")
+                st.error(f"حدث خطأ: {e}")
