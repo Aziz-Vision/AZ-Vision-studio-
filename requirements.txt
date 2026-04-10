@@ -1,4 +1,7 @@
-streamlit
+streamlit==1.24.0
 opencv-python-headless
 Pillow
 pyTelegramBotAPI
+numpy==1.24.3
+facexlib
+basicsr==1.4.2
