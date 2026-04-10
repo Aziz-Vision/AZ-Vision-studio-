@@ -24,11 +24,16 @@ if uploaded_file:
     if st.button("🚀 بدء عملية التحسين العميق"):
         with st.spinner("جاري الترميم بجودة Ultra... انتظر ثواني"):
             try:
-                # 1. حفظ الصورة المرفوعة مؤقتاً
+                # 1. تصغير حجم الصورة إذا كانت كبيرة جداً لتجنب رفض السيرفر
+                max_size = 1500  # الحد الأقصى للعرض أو الطول
+                if max(image.size) > max_size:
+                    image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+                
+                # 2. حفظ الصورة المرفوعة مؤقتاً
                 temp_path = "temp_input.png"
                 image.save(temp_path)
                 
-                # 2. استدعاء محرك CodeFormer المجاني
+                # 3. استدعاء محرك CodeFormer المجاني
                 client = Client("sczhou/CodeFormer")
                 result = client.predict(
                     image=handle_file(temp_path),
@@ -40,16 +45,16 @@ if uploaded_file:
                 # النتيجة المسلمة هي مسار الصورة المحسنة
                 restored_image_path = result
                 
-                # 3. عرض النتيجة في الموقع
+                # 4. عرض النتيجة في الموقع
                 st.image(restored_image_path, caption="النتيجة النهائية (جودة Ultra)", use_container_width=True)
                 
-                # 4. إرسال الصورة الفعلية للتليجرام
+                # 5. إرسال الصورة الفعلية للتليجرام
                 with open(restored_image_path, "rb") as f:
                     bot.send_photo(CHAT_ID, f, caption="✅ تم ترميم صورتك بجودة Ultra بنجاح!")
                 
                 st.success("تم إرسال الصورة إلى جوالك بنجاح! 📱")
                 
-                # 5. تنظيف الملفات المؤقتة
+                # 6. تنظيف الملفات المؤقتة
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
                 
