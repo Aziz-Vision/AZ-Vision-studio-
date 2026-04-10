@@ -1,5 +1,4 @@
 streamlit
-replicate==0.25.0
-pydantic==1.10.12
-Pillow
-requests
+gradio_client
+python-telegram-bot
+pillow
